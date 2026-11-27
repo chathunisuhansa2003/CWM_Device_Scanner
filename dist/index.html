@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Identify an e-waste device from a photo and view dataset-based smartphone metal yield estimates.">
+<title>CWM E-Waste Scanner</title>
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:#eef4f1;color:#132c25;font:1rem/1.55 system-ui,sans-serif}
+main{width:min(100% - 2rem,42rem);margin:clamp(1rem,5vw,4rem) auto}
+header{background:#153e34;color:#fff;border-radius:1.35rem 1.35rem 0 0;padding:clamp(1.2rem,5vw,2.5rem)}
+h1{font-size:clamp(1.85rem,5vw,2.8rem);letter-spacing:-.045em;line-height:1.1;margin:0}
+p{margin:.6rem 0 0}
+section{background:white;padding:clamp(1rem,5vw,2.5rem);border-radius:0 0 1.35rem 1.35rem}
+.actions{display:flex;flex-wrap:wrap;gap:.6rem}
+button,select{font:inherit;padding:.65rem .9rem;border-radius:.65rem;border:1px solid #80988e}
+button{background:#fff;color:#153e34;cursor:pointer;font-weight:650}
+button.primary{background:#087256;color:white;border-color:#087256;margin-top:.8rem;width:100%}
+button:disabled{opacity:.55;cursor:default}
+img{width:100%;height:clamp(10rem,42vw,17rem);object-fit:contain;background:#edf4f1;border-radius:.7rem;margin-top:.8rem}
+label{display:block;margin:.8rem 0}
+select{width:100%;background:white}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:.5rem .3rem;border-bottom:1px solid #d9e5df}
+small{font-size:.875rem}
+:focus-visible{outline:3px solid #d58928;outline-offset:3px}
+</style>
+<main>
+<header><h1>CWM E-Waste Scanner</h1><p>Take or upload a clear photo of one device.</p></header>
+<section aria-label="Scanner">
+<div class="actions">
+<button id="camera">Take photo</button><button id="gallery">Upload photo</button>
+</div>
+<input id="capture" type="file" accept="image/*" capture="environment" hidden>
+<input id="upload" type="file" accept="image/*" hidden>
+<img id="preview" alt="Selected device photo" hidden>
+<button id="scan" class="primary" disabled>Identify device</button>
+<p id="status" role="status"></p>
+<label id="confirm" hidden><input id="smartphone" type="checkbox"> I confirm this device is a smartphone</label>
+<div id="estimates" hidden>
+<label for="phone">Phone model</label><select id="phone"><option value="">All smartphones (model unknown)</option></select>
+<h2>Estimated metal yield</h2>
+<small>Dataset-based estimates in grams. The range covers the middle 50% of matching records.</small>
+<table><thead><tr><th scope="col">Metal</th><th scope="col">Median</th><th scope="col">Range</th><th scope="col">Records</th></tr></thead><tbody id="rows"></tbody></table>
+</div>
+</section>
+</main>
+<script type="module" src="./app.mjs"></script>
+</html>
