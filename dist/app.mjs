@@ -10,34 +10,108 @@ const catalog = fetch("./metals.json").then(response => {
 });
 catalog.catch(() => {});
 
-for (const [button,input] of [["camera","capture"],["gallery","upload"]]) {
-  const picker = byId(input);
-  byId(button).onclick = () => picker.click();
-  picker.onchange = async () => {
-    const file = picker.files[0];
-    if (!file) return;
-    picker.value = "";
-    const id = ++generation;
-    scan.disabled = true;
-    status.textContent = "";
-    preview.hidden = true;
-    confirm.hidden = estimates.hidden = true;
-    smartphone.checked = false;
-    phone.value = "";
-    if (photoUrl) URL.revokeObjectURL(photoUrl);
-    photoUrl = URL.createObjectURL(file);
-    preview.src = photoUrl;
-    try {
-      await preview.decode();
-      if (id === generation) {
-        preview.hidden = false;
-        scan.disabled = false;
-      }
-    } catch {
-      if (id === generation) status.textContent = "This photo could not be opened. Try a JPEG or PNG.";
+async function showPhoto(file) {
+  const id = ++generation;
+  scan.disabled = true;
+  status.textContent = "";
+  preview.hidden = true;
+  confirm.hidden = estimates.hidden = true;
+  smartphone.checked = false;
+  phone.value = "";
+  if (photoUrl) URL.revokeObjectURL(photoUrl);
+  photoUrl = URL.createObjectURL(file);
+  preview.src = photoUrl;
+  try {
+    await preview.decode();
+    if (id === generation) {
+      preview.hidden = false;
+      scan.disabled = false;
     }
-  };
+  } catch {
+    if (id === generation) status.textContent = "This photo could not be opened. Try a JPEG or PNG.";
+  }
 }
+
+const camera = byId("camera"), upload = byId("upload");
+const panel = document.createElement("div");
+panel.hidden = true;
+panel.innerHTML = `<video playsinline muted style="display:block;width:100%;max-height:22rem;margin:.75rem 0;background:#153e34"></video>
+<button type="button" disabled>Capture photo</button>
+<button type="button">Close camera</button>`;
+preview.before(panel);
+const video = panel.querySelector("video");
+const [capture, close] = panel.querySelectorAll("button");
+let cameraRequest = 0;
+
+function stopCamera() {
+  cameraRequest++;
+  video.srcObject?.getTracks().forEach(track => track.stop());
+  video.srcObject = null;
+  panel.hidden = true;
+  capture.disabled = true;
+}
+
+camera.onclick = async () => {
+  stopCamera();
+  const id = cameraRequest;
+  if (!navigator.mediaDevices?.getUserMedia) {
+    status.textContent = "Camera unavailable here. Open the HTTPS link in your browser or upload a photo.";
+    return;
+  }
+  panel.hidden = false;
+  status.textContent = "Opening camera…";
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {facingMode: {ideal: "environment"}},
+      audio: false,
+    });
+    if (id !== cameraRequest) {
+      stream.getTracks().forEach(track => track.stop());
+      return;
+    }
+    video.srcObject = stream;
+    await video.play();
+    if (id !== cameraRequest) return;
+    capture.disabled = false;
+    status.textContent = "";
+  } catch (error) {
+    if (id !== cameraRequest) return;
+    stopCamera();
+    status.textContent = error.name === "NotAllowedError"
+      ? "Camera permission was denied. Allow camera access in your browser or upload a photo."
+      : "Could not open the camera. Check that it is connected and available, or upload a photo.";
+  }
+};
+
+capture.onclick = () => {
+  if (!video.videoWidth || !video.videoHeight) return;
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  stopCamera();
+  const id = cameraRequest, photoId = generation;
+  canvas.toBlob(photo => {
+    if (photo && id === cameraRequest && photoId === generation) showPhoto(photo);
+  }, "image/jpeg", 0.92);
+};
+close.onclick = () => {
+  stopCamera();
+  status.textContent = "";
+};
+byId("gallery").onclick = () => {
+  if (!panel.hidden) {
+    stopCamera();
+    status.textContent = "";
+  }
+  upload.click();
+};
+upload.onchange = () => {
+  const file = upload.files[0];
+  upload.value = "";
+  if (file) showPhoto(file);
+};
+window.addEventListener("pagehide", stopCamera);
 
 scan.onclick = () => {
   const canvas = document.createElement("canvas");
